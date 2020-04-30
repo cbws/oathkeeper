@@ -102,7 +102,7 @@ func (h *DecisionTraefikHandler) decisionTraefiks(w http.ResponseWriter, r *http
 		return
 	}
 
-	s, err := h.r.ProxyRequestHandler().HandleRequest(r, rl)
+	s, err := h.r.ProxyRequestHandler().HandleRequest(r, rl, methodToMatch, urlToMatch)
 	if err != nil {
 		h.r.Logger().WithError(err).
 			WithField("granted", false).

@@ -450,7 +450,7 @@ func TestRequestHandler(t *testing.T) {
 				tc.setup()
 			}
 
-			_, err := reg.ProxyRequestHandler().HandleRequest(tc.r, &tc.rule)
+			_, err := reg.ProxyRequestHandler().HandleRequest(tc.r, &tc.rule,, "")
 			if tc.expectErr {
 				require.Error(t, err)
 			} else {
@@ -542,7 +542,7 @@ func TestInitializeSession(t *testing.T) {
 				Mutators:       []rule.Handler{},
 			}
 
-			session := reg.ProxyRequestHandler().InitializeAuthnSession(tc.r, &rule)
+			session := reg.ProxyRequestHandler().InitializeAuthnSession(tc.r, &rule, "", )
 
 			assert.NotNil(t, session)
 			assert.EqualValues(t, tc.expectContext, session.MatchContext)

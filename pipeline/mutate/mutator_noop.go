@@ -41,6 +41,9 @@ func (a *MutatorNoop) GetID() string {
 
 func (a *MutatorNoop) Mutate(r *http.Request, session *authn.AuthenticationSession, config json.RawMessage, _ pipeline.Rule) error {
 	session.Header = r.Header
+
+	session.Header.Del("Content-Length")
+
 	return nil
 }
 

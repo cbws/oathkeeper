@@ -115,7 +115,7 @@ func (h *DecisionHandler) decisions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s, err := h.r.ProxyRequestHandler().HandleRequest(r, rl)
+	s, err := h.r.ProxyRequestHandler().HandleRequest(r, rl, r.Method, *r.URL)
 	if err != nil {
 		h.r.Logger().WithError(err).
 			WithFields(fields).

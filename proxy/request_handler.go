@@ -22,7 +22,9 @@ package proxy
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
+	"net/url"
 
 	"github.com/ory/herodot"
 	"github.com/ory/x/errorsx"
@@ -167,7 +169,7 @@ func (d *RequestHandler) HandleError(w http.ResponseWriter, r *http.Request, rl 
 	}
 }
 
-func (d *RequestHandler) HandleRequest(r *http.Request, rl *rule.Rule) (session *authn.AuthenticationSession, err error) {
+func (d *RequestHandler) HandleRequest(r *http.Request, rl *rule.Rule, method string, url url.URL) (session *authn.AuthenticationSession, err error) {
 	var found bool
 
 	fields := map[string]interface{}{
@@ -179,7 +181,7 @@ func (d *RequestHandler) HandleRequest(r *http.Request, rl *rule.Rule) (session 
 	}
 
 	// initialize the session used during all the flow
-	session = d.InitializeAuthnSession(r, rl)
+	session = d.InitializeAuthnSession(r, rl, method, url)
 
 	if len(rl.Authenticators) == 0 {
 		err = errors.New("No authentication handler was set in the rule")
@@ -330,13 +332,14 @@ func (d *RequestHandler) HandleRequest(r *http.Request, rl *rule.Rule) (session 
 }
 
 // InitializeAuthnSession reates an authentication session and initializes it with a Match context if possible
-func (d *RequestHandler) InitializeAuthnSession(r *http.Request, rl *rule.Rule) *authn.AuthenticationSession {
+func (d *RequestHandler) InitializeAuthnSession(r *http.Request, rl *rule.Rule, method string, url url.URL) *authn.AuthenticationSession {
 
 	session := &authn.AuthenticationSession{
 		Subject: "",
 	}
 
-	values, err := rl.ExtractRegexGroups(d.c.AccessRuleMatchingStrategy(), r.URL)
+	log.Printf("URL: %+v", url)
+	values, err := rl.ExtractRegexGroups(d.c.AccessRuleMatchingStrategy(), &url)
 	if err != nil {
 		d.r.Logger().WithError(err).
 			WithField("rule_id", rl.ID).
@@ -346,7 +349,9 @@ func (d *RequestHandler) InitializeAuthnSession(r *http.Request, rl *rule.Rule) 
 	} else {
 		session.MatchContext = authn.MatchContext{
 			RegexpCaptureGroups: values,
-			URL:                 r.URL,
+			Method:              method,
+			Headers:             r.Header,
+			URL:                 &url,
 		}
 	}
 

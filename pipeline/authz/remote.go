@@ -4,11 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 	"io"
 	"net/http"
 	"text/template"
-
-	"github.com/pkg/errors"
 
 	"github.com/ory/x/httpx"
 

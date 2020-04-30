@@ -131,7 +131,7 @@ func (d *Proxy) Director(r *http.Request) {
 	}
 
 	*r = *r.WithContext(context.WithValue(r.Context(), ContextKeyMatchedRule, rl))
-	s, err := d.r.ProxyRequestHandler().HandleRequest(r, rl)
+	s, err := d.r.ProxyRequestHandler().HandleRequest(r, rl, r.Method, *r.URL)
 	if err != nil {
 		*r = *r.WithContext(context.WithValue(r.Context(), director, err))
 		return
