@@ -19,7 +19,7 @@ require (
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/go-swagger/go-swagger v0.21.1-0.20200107003254-1c98855b472d
 	github.com/gobuffalo/httptest v1.0.2
-	github.com/gobuffalo/packr/v2 v2.7.1
+	github.com/gobuffalo/packr/v2 v2.8.0
 	github.com/gobwas/glob v0.2.3
 	github.com/golang/gddo v0.0.0-20190904175337-72a348e765d2
 	github.com/golang/mock v1.3.1
@@ -29,6 +29,7 @@ require (
 	github.com/huandu/xstrings v1.2.0 // indirect
 	github.com/imdario/mergo v0.3.7
 	github.com/julienschmidt/httprouter v1.2.0
+	github.com/karrick/godirwalk v1.15.6 // indirect
 	github.com/lib/pq v1.3.0
 	github.com/mattn/goveralls v0.0.5
 	github.com/mitchellh/copystructure v1.0.0

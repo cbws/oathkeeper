@@ -2,6 +2,7 @@ package x
 
 import (
 	"fmt"
+	"net/http"
 	"reflect"
 	"text/template"
 
@@ -32,6 +33,9 @@ func NewTemplate(id string) *template.Template {
 				}
 
 				return ""
+			},
+			"header": func(headers http.Header, header string) string {
+				return headers.Get(header)
 			},
 		}).
 		Funcs(sprig.TxtFuncMap())

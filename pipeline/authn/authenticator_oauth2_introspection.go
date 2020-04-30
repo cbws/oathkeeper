@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"golang.org/x/oauth2"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -60,6 +62,7 @@ type AuthenticatorOAuth2Introspection struct {
 
 	tokenCache *ristretto.Cache
 	cacheTTL   *time.Duration
+	cfg    *AuthenticatorOAuth2IntrospectionConfiguration
 }
 
 func NewAuthenticatorOAuth2Introspection(c configuration.Provider) *AuthenticatorOAuth2Introspection {
@@ -223,6 +226,12 @@ func (a *AuthenticatorOAuth2Introspection) Validate(config json.RawMessage) erro
 }
 
 func (a *AuthenticatorOAuth2Introspection) Config(config json.RawMessage) (*AuthenticatorOAuth2IntrospectionConfiguration, error) {
+	if a.cfg != nil {
+		log.Printf("Reuse config")
+
+		return a.cfg, nil
+	}
+
 	var c AuthenticatorOAuth2IntrospectionConfiguration
 	if err := a.c.AuthenticatorConfig(a.GetID(), config, &c); err != nil {
 		return nil, NewErrAuthenticatorMisconfigured(a, err)
@@ -231,12 +240,22 @@ func (a *AuthenticatorOAuth2Introspection) Config(config json.RawMessage) (*Auth
 	var rt http.RoundTripper
 
 	if c.PreAuth != nil && c.PreAuth.Enabled {
-		rt = (&clientcredentials.Config{
+		log.Printf("Preauth! %+v", c.PreAuth)
+		c2 := &clientcredentials.Config{
 			ClientID:     c.PreAuth.ClientID,
 			ClientSecret: c.PreAuth.ClientSecret,
 			Scopes:       c.PreAuth.Scope,
 			TokenURL:     c.PreAuth.TokenURL,
-		}).Client(context.Background()).Transport
+			AuthStyle: oauth2.AuthStyleInParams,
+		}
+		source := NewNotifyingTokenSource(oauth2.ReuseTokenSource(nil, c2.TokenSource(context.Background())), func(token *oauth2.Token) error {
+			log.Printf("New token: %+v (Valid: %t)", token, token.Valid())
+
+			return nil
+		})
+		rt = &oauth2.Transport{
+			Source: source,
+		}
 	}
 
 	if c.Retry == nil {
@@ -269,6 +288,37 @@ func (a *AuthenticatorOAuth2Introspection) Config(config json.RawMessage) (*Auth
 		}
 		a.cacheTTL = &cacheTTL
 	}
+	a.cfg = &c
 
 	return &c, nil
+}
+
+
+// TokenNotifyFunc is a function that accepts an oauth2 Token upon refresh, and
+// returns an error if it should not be used.
+type TokenNotifyFunc func(*oauth2.Token) error
+
+// NotifyingTokenSource is an oauth2.TokenSource that calls a function when a
+// new token is obtained.
+type NotifyingTokenSource struct {
+	f   TokenNotifyFunc
+	src oauth2.TokenSource
+}
+
+// NewNotifyingTokenSource creates a NotifyingTokenSource from an underlying src
+// and calls f when a new token is obtained.
+func NewNotifyingTokenSource(src oauth2.TokenSource, f TokenNotifyFunc) *NotifyingTokenSource {
+	return &NotifyingTokenSource{f: f, src: src}
+}
+
+// Token fetches a new token from the underlying source.
+func (s *NotifyingTokenSource) Token() (*oauth2.Token, error) {
+	t, err := s.src.Token()
+	if err != nil {
+		return nil, err
+	}
+	if s.f == nil {
+		return t, nil
+	}
+	return t, s.f(t)
 }
